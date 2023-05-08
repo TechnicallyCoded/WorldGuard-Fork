@@ -74,6 +74,7 @@ import com.sk89q.worldguard.protection.managers.storage.file.DirectoryYamlDriver
 import com.sk89q.worldguard.protection.managers.storage.sql.SQLDriver;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.util.logging.RecordMessagePrefixer;
+import com.tcoded.folialib.FoliaLib;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.DrilldownPie;
 import org.bstats.charts.SimplePie;
@@ -95,6 +96,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,6 +111,9 @@ public class WorldGuardPlugin extends JavaPlugin {
     private PlayerMoveListener playerMoveListener;
 
     private static final int BSTATS_PLUGIN_ID = 3283;
+
+
+    public FoliaLib foliaLib;
 
     /**
      * Construct objects. Actual loading occurs when the plugin is enabled, so
@@ -137,6 +142,10 @@ public class WorldGuardPlugin extends JavaPlugin {
      */
     @Override
     public void onEnable() {
+
+        // FoliaLib Util
+        foliaLib = new FoliaLib(this);
+
         // Catch bad things being done by naughty plugins that include WorldGuard's classes
         ClassSourceValidator verifier = new ClassSourceValidator(this);
         verifier.reportMismatches(ImmutableList.of(WorldGuard.class, ProtectedRegion.class, Flag.class));
@@ -163,7 +172,9 @@ public class WorldGuardPlugin extends JavaPlugin {
             reg.register(GeneralCommands.class);
         }
 
-        getServer().getScheduler().scheduleSyncRepeatingTask(this, sessionManager, BukkitSessionManager.RUN_DELAY, BukkitSessionManager.RUN_DELAY);
+        int runDelayMs = BukkitSessionManager.RUN_DELAY * 50;
+        foliaLib.getImpl().runTimer(sessionManager, runDelayMs, runDelayMs, TimeUnit.MILLISECONDS);
+//        getServer().getScheduler().scheduleSyncRepeatingTask(this, sessionManager, BukkitSessionManager.RUN_DELAY, BukkitSessionManager.RUN_DELAY);
 
         // Register events
         getServer().getPluginManager().registerEvents(sessionManager, this);
@@ -204,12 +215,25 @@ public class WorldGuardPlugin extends JavaPlugin {
         }
         worldListener.registerEvents();
 
-        Bukkit.getScheduler().runTask(this, () -> {
+        if (foliaLib.isFolia()) {
             for (Player player : Bukkit.getServer().getOnlinePlayers()) {
-                ProcessPlayerEvent event = new ProcessPlayerEvent(player);
-                Events.fire(event);
+                foliaLib.getImpl().runAtEntity(player, new Runnable() {
+                    @Override
+                    public void run() {
+                        ProcessPlayerEvent event = new ProcessPlayerEvent(player);
+                        Events.fire(event);
+                    }
+                });
             }
-        });
+        }
+        else {
+            Bukkit.getScheduler().runTask(this, () -> {
+                for (Player player : Bukkit.getServer().getOnlinePlayers()) {
+                    ProcessPlayerEvent event = new ProcessPlayerEvent(player);
+                    Events.fire(event);
+                }
+            });
+        }
 
         ((SimpleFlagRegistry) WorldGuard.getInstance().getFlagRegistry()).setInitialized(true);
 
@@ -264,7 +288,8 @@ public class WorldGuardPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         WorldGuard.getInstance().disable();
-        this.getServer().getScheduler().cancelTasks(this);
+//        this.getServer().getScheduler().cancelTasks(this);
+        foliaLib.getImpl().cancelAllTasks();
     }
 
     @Override
