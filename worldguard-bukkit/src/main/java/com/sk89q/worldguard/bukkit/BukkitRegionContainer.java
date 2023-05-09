@@ -101,7 +101,9 @@ public class BukkitRegionContainer extends RegionContainer {
     }
 
     public void shutdown() {
-        container.shutdown();
+        synchronized (containerLock) {
+            container.shutdown();
+        }
     }
 
     @Override
@@ -117,7 +119,9 @@ public class BukkitRegionContainer extends RegionContainer {
         RegionManager manager;
 
         synchronized (lock) {
-            manager = container.load(world.getName());
+            synchronized (containerLock) {
+                manager = container.load(world.getName());
+            }
 
             if (manager != null) {
                 // Bias the region data for loaded chunks

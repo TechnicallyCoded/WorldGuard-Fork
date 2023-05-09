@@ -35,6 +35,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class GroupDomain implements Domain, ChangeTracked {
 
     private final Set<String> groups = new CopyOnWriteArraySet<>();
+
+    private final Object dirtyLock = new Object();
     private boolean dirty = true;
 
     /**
@@ -133,12 +135,16 @@ public class GroupDomain implements Domain, ChangeTracked {
 
     @Override
     public boolean isDirty() {
-        return dirty;
+        synchronized (dirtyLock) {
+            return dirty;
+        }
     }
 
     @Override
     public void setDirty(boolean dirty) {
-        this.dirty = dirty;
+        synchronized (dirtyLock) {
+            this.dirty = dirty;
+        }
     }
 
     @Override

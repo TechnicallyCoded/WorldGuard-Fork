@@ -113,10 +113,12 @@ public class ProtectedCuboidRegion extends ProtectedRegion {
     @Override
     public List<BlockVector2> getPoints() {
         List<BlockVector2> pts = new ArrayList<>();
-        int x1 = min.getBlockX();
-        int x2 = max.getBlockX();
-        int z1 = min.getBlockZ();
-        int z2 = max.getBlockZ();
+        BlockVector3 minPt = getMinimumPoint();
+        BlockVector3 maxPt = getMaximumPoint();
+        int x1 = minPt.getBlockX();
+        int x2 = maxPt.getBlockX();
+        int z1 = minPt.getBlockZ();
+        int z2 = maxPt.getBlockZ();
 
         pts.add(BlockVector2.at(x1, z1));
         pts.add(BlockVector2.at(x2, z1));
@@ -131,9 +133,11 @@ public class ProtectedCuboidRegion extends ProtectedRegion {
         final double x = pt.getX();
         final double y = pt.getY();
         final double z = pt.getZ();
-        return x >= min.getBlockX() && x < max.getBlockX() + 1
-                && y >= min.getBlockY() && y < max.getBlockY() + 1
-                && z >= min.getBlockZ() && z < max.getBlockZ() + 1;
+        BlockVector3 minPt = getMinimumPoint();
+        BlockVector3 maxPt = getMaximumPoint();
+        return x >= minPt.getBlockX() && x < maxPt.getBlockX() + 1
+                && y >= minPt.getBlockY() && y < maxPt.getBlockY() + 1
+                && z >= minPt.getBlockZ() && z < maxPt.getBlockZ() + 1;
     }
 
     @Override
@@ -161,9 +165,11 @@ public class ProtectedCuboidRegion extends ProtectedRegion {
 
     @Override
     public int volume() {
-        int xLength = max.getBlockX() - min.getBlockX() + 1;
-        int yLength = max.getBlockY() - min.getBlockY() + 1;
-        int zLength = max.getBlockZ() - min.getBlockZ() + 1;
+        BlockVector3 minPt = getMinimumPoint();
+        BlockVector3 maxPt = getMaximumPoint();
+        int xLength = maxPt.getBlockX() - minPt.getBlockX() + 1;
+        int yLength = maxPt.getBlockY() - minPt.getBlockY() + 1;
+        int zLength = maxPt.getBlockZ() - minPt.getBlockZ() + 1;
 
         try {
             long v = MathUtils.checkedMultiply(xLength, yLength);

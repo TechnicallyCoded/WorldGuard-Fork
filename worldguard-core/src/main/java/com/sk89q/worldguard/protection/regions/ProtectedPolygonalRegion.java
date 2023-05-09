@@ -64,9 +64,13 @@ public class ProtectedPolygonalRegion extends ProtectedRegion {
         super(id, transientRegion);
         ImmutableList<BlockVector2> immutablePoints = ImmutableList.copyOf(points);
         setMinMaxPoints(immutablePoints, minY, maxY);
+
         this.points = immutablePoints;
-        this.minY = min.getBlockY();
-        this.maxY = max.getBlockY();
+
+        synchronized (this.boundsLock) {
+            this.minY = min.getBlockY();
+            this.maxY = max.getBlockY();
+        }
     }
 
     /**
@@ -110,7 +114,9 @@ public class ProtectedPolygonalRegion extends ProtectedRegion {
             return false;
         }
         //Quick and dirty check.
-        if (targetX < min.getBlockX() || targetX > max.getBlockX() || targetZ < min.getBlockZ() || targetZ > max.getBlockZ()) {
+        BlockVector3 minPt = getMinimumPoint();
+        BlockVector3 maxPt = getMaximumPoint();
+        if (targetX < minPt.getBlockX() || targetX > maxPt.getBlockX() || targetZ < minPt.getBlockZ() || targetZ > maxPt.getBlockZ()) {
             return false;
         }
         boolean inside = false;

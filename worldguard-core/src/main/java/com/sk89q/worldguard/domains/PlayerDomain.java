@@ -36,6 +36,8 @@ public class PlayerDomain implements Domain, ChangeTracked {
 
     private final Set<UUID> uniqueIds = new CopyOnWriteArraySet<>();
     private final Set<String> names = new CopyOnWriteArraySet<>();
+
+    private final Object dirtyLock = new Object();
     private boolean dirty = true;
 
     /**
@@ -53,7 +55,9 @@ public class PlayerDomain implements Domain, ChangeTracked {
         checkNotNull(domain, "domain");
         uniqueIds.addAll(domain.getUniqueIds());
         names.addAll(domain.getPlayers());
-        dirty = true;
+        synchronized (dirtyLock) {
+            dirty = true;
+        }
     }
 
     /**
@@ -198,12 +202,16 @@ public class PlayerDomain implements Domain, ChangeTracked {
 
     @Override
     public boolean isDirty() {
-        return dirty;
+        synchronized (dirtyLock) {
+            return dirty;
+        }
     }
 
     @Override
     public void setDirty(boolean dirty) {
-        this.dirty = dirty;
+        synchronized (dirtyLock) {
+            this.dirty = dirty;
+        }
     }
 
     @Override

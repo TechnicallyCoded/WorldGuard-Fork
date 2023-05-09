@@ -56,8 +56,10 @@ public class GlobalProtectedRegion extends ProtectedRegion {
      */
     public GlobalProtectedRegion(String id, boolean transientRegion) {
         super(id, transientRegion);
-        min = BlockVector3.ZERO;
-        max = BlockVector3.ZERO;
+        synchronized (this.boundsLock) {
+            min = BlockVector3.ZERO;
+            max = BlockVector3.ZERO;
+        }
     }
 
     @Override
@@ -69,7 +71,8 @@ public class GlobalProtectedRegion extends ProtectedRegion {
     public List<BlockVector2> getPoints() {
         // This doesn't make sense
         List<BlockVector2> pts = new ArrayList<>();
-        pts.add(BlockVector2.at(min.getBlockX(), min.getBlockZ()));
+        BlockVector3 minPt = getMinimumPoint();
+        pts.add(BlockVector2.at(minPt.getBlockX(), minPt.getBlockZ()));
         return pts;
     }
 

@@ -52,18 +52,23 @@ public class PriorityRTreeIndex extends HashMapIndex {
     private static final int BRANCH_FACTOR = 30;
     private static final MBRConverter<ProtectedRegion> CONVERTER = new ProtectedRegionMBRConverter();
 
+    private final Object treeLock = new Object();
     private PRTree<ProtectedRegion> tree;
 
     public PriorityRTreeIndex() {
-        tree = new PRTree<>(CONVERTER, BRANCH_FACTOR);
-        tree.load(Collections.emptyList());
+        synchronized (this.treeLock) {
+            tree = new PRTree<>(CONVERTER, BRANCH_FACTOR);
+            tree.load(Collections.emptyList());
+        }
     }
 
     @Override
     protected void rebuildIndex() {
         PRTree<ProtectedRegion> newTree = new PRTree<>(CONVERTER, BRANCH_FACTOR);
         newTree.load(values());
-        this.tree = newTree;
+        synchronized (this.treeLock) {
+            this.tree = newTree;
+        }
     }
 
     @Override
@@ -71,7 +76,12 @@ public class PriorityRTreeIndex extends HashMapIndex {
         Set<ProtectedRegion> seen = new HashSet<>();
         MBR pointMBR = new SimpleMBR(position.getX(), position.getX(), position.getY(), position.getY(), position.getZ(), position.getZ());
 
-        for (ProtectedRegion region : tree.find(pointMBR)) {
+        Iterable<ProtectedRegion> protectedRegions;
+        synchronized (this.treeLock) {
+            protectedRegions = tree.find(pointMBR);
+        }
+
+        for (ProtectedRegion region : protectedRegions) {
             if (region.contains(position) && !seen.contains(region)) {
                 seen.add(region);
                 if (!consumer.test(region)) {
@@ -89,7 +99,12 @@ public class PriorityRTreeIndex extends HashMapIndex {
         Set<ProtectedRegion> candidates = new HashSet<>();
         MBR pointMBR = new SimpleMBR(min.getX(), max.getX(), min.getY(), max.getY(), min.getZ(), max.getZ());
 
-        for (ProtectedRegion found : tree.find(pointMBR)) {
+        Iterable<ProtectedRegion> protectedRegions;
+        synchronized (this.treeLock) {
+            protectedRegions = tree.find(pointMBR);
+        }
+
+        for (ProtectedRegion found : protectedRegions) {
             candidates.add(found);
         }
 

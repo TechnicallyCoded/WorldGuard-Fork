@@ -52,6 +52,8 @@ public abstract class RegionContainer {
 
     protected final Object lock = new Object();
     protected final QueryCache cache = new QueryCache();
+
+    protected final Object containerLock = new Object();
     protected RegionContainerImpl container;
 
     /**
@@ -59,7 +61,9 @@ public abstract class RegionContainer {
      */
     public void initialize() {
         ConfigurationManager config = WorldGuard.getInstance().getPlatform().getGlobalStateManager();
-        container = new RegionContainerImpl(config.selectedRegionStoreDriver, WorldGuard.getInstance().getFlagRegistry());
+        synchronized (containerLock) {
+            container = new RegionContainerImpl(config.selectedRegionStoreDriver, WorldGuard.getInstance().getFlagRegistry());
+        }
 
         loadWorlds();
 
@@ -82,7 +86,9 @@ public abstract class RegionContainer {
      * @return the driver
      */
     public RegionDriver getDriver() {
-        return container.getDriver();
+        synchronized (containerLock) {
+            return container.getDriver();
+        }
     }
 
     /**
@@ -113,7 +119,9 @@ public abstract class RegionContainer {
      */
     @Nullable
     public RegionManager get(World world) {
-        return container.get(world.getName());
+        synchronized (containerLock) {
+            return container.get(world.getName());
+        }
     }
 
     /**
@@ -122,7 +130,11 @@ public abstract class RegionContainer {
      * @return a list of managers
      */
     public List<RegionManager> getLoaded() {
-        return Collections.unmodifiableList(container.getLoaded());
+        List<RegionManager> loaded;
+        synchronized (containerLock) {
+            loaded = container.getLoaded();
+        }
+        return Collections.unmodifiableList(loaded);
     }
 
     /**
@@ -131,7 +143,9 @@ public abstract class RegionContainer {
      * @return a set of region managers
      */
     public Set<RegionManager> getSaveFailures() {
-        return container.getSaveFailures();
+        synchronized (containerLock) {
+            return container.getSaveFailures();
+        }
     }
 
     /**
@@ -186,7 +200,9 @@ public abstract class RegionContainer {
         checkNotNull(world);
 
         synchronized (lock) {
-            container.unload(world.getName());
+            synchronized (containerLock) {
+                container.unload(world.getName());
+            }
         }
     }
 

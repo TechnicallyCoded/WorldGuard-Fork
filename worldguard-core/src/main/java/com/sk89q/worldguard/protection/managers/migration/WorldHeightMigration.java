@@ -36,10 +36,13 @@ import java.util.logging.Logger;
 public class WorldHeightMigration extends AbstractMigration {
     private static final Logger log = Logger.getLogger(WorldHeightMigration.class.getCanonicalName());
 
+    private static final Field boundsLockField;
     private static final Field minField;
     private static final Field maxField;
     static {
         try {
+            boundsLockField = ProtectedRegion.class.getDeclaredField("boundsLock");
+            boundsLockField.setAccessible(true);
             minField = ProtectedRegion.class.getDeclaredField("min");
             minField.setAccessible(true);
             maxField = ProtectedRegion.class.getDeclaredField("max");
@@ -99,8 +102,11 @@ public class WorldHeightMigration extends AbstractMigration {
 
     private static void expand(ProtectedRegion region, int min, int max) throws MigrationException {
         try {
-            minField.set(region, region.getMinimumPoint().withY(min));
-            maxField.set(region, region.getMaximumPoint().withY(max));
+            Object boundsLock = boundsLockField.get(region);
+            synchronized (boundsLock) {
+                minField.set(region, region.getMinimumPoint().withY(min));
+                maxField.set(region, region.getMaximumPoint().withY(max));
+            }
             region.setDirty(true);
         } catch (IllegalAccessException e) {
             throw new MigrationException("Migrator broke.", e);

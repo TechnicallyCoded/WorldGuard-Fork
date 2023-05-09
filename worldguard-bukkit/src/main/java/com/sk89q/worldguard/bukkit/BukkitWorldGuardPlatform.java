@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 
 public class BukkitWorldGuardPlatform implements WorldGuardPlatform {
 
+    private final Object platformPartsLock = new Object();
     private BukkitSessionManager sessionManager;
     private BukkitConfigurationManager configuration;
     private BukkitRegionContainer regionContainer;
@@ -94,17 +95,23 @@ public class BukkitWorldGuardPlatform implements WorldGuardPlatform {
 
     @Override
     public BukkitConfigurationManager getGlobalStateManager() {
-        return configuration;
+        synchronized (platformPartsLock) {
+            return configuration;
+        }
     }
 
     @Override
     public StringMatcher getMatcher() {
-        return stringMatcher;
+        synchronized (platformPartsLock) {
+            return stringMatcher;
+        }
     }
 
     @Override
     public SessionManager getSessionManager() {
-        return this.sessionManager;
+        synchronized (platformPartsLock) {
+            return this.sessionManager;
+        }
     }
 
     @Override
@@ -135,30 +142,38 @@ public class BukkitWorldGuardPlatform implements WorldGuardPlatform {
 
     @Override
     public void load() {
-        stringMatcher = new BukkitStringMatcher();
-        sessionManager = new BukkitSessionManager();
-        configuration = new BukkitConfigurationManager(WorldGuardPlugin.inst());
-        configuration.load();
-        regionContainer = new BukkitRegionContainer(WorldGuardPlugin.inst());
-        regionContainer.initialize();
-        debugHandler = new BukkitDebugHandler(WorldGuardPlugin.inst());
+        synchronized (platformPartsLock) {
+            stringMatcher = new BukkitStringMatcher();
+            sessionManager = new BukkitSessionManager();
+            configuration = new BukkitConfigurationManager(WorldGuardPlugin.inst());
+            configuration.load();
+            regionContainer = new BukkitRegionContainer(WorldGuardPlugin.inst());
+            regionContainer.initialize();
+            debugHandler = new BukkitDebugHandler(WorldGuardPlugin.inst());
+        }
     }
 
     @Override
     public void unload() {
-        sessionManager.shutdown();
-        configuration.unload();
-        regionContainer.shutdown();
+        synchronized (platformPartsLock) {
+            sessionManager.shutdown();
+            configuration.unload();
+            regionContainer.shutdown();
+        }
     }
 
     @Override
     public RegionContainer getRegionContainer() {
-        return this.regionContainer;
+        synchronized (platformPartsLock) {
+            return this.regionContainer;
+        }
     }
 
     @Override
     public DebugHandler getDebugHandler() {
-        return debugHandler;
+        synchronized (platformPartsLock) {
+            return debugHandler;
+        }
     }
 
     @Override
